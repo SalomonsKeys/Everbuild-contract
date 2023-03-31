@@ -31,12 +31,15 @@ contract Everbuild is ERC721Enumerable, Ownable {
     mapping(address => uint) public claimable; // This will be used to store the amount of tokens a user can claim.
     mapping(address => uint) public whitelistAmount; //This will be used to check how many tokens a whitelisted address can mint.
     mapping(address => uint) public _mintedTokens; // This will be used to prevent people from miting more than x for the public mint.
+    // a mapping to keep tracking of the total amount of tokens people have claimed
+    mapping(address => uint) public totalClaimed;
     //*********************************************************************
 
 
     //********************** Constants ************************************
     IEverburn private constant everburn = IEverburn(0xA500fA36631025BC45745c7de6aEB8B09715fd43);
     uint public constant MAX_SUPPLY = 12; 
+    uint public constant PUBLIC_MAX_MINT = 2;
     uint public constant distributionsAmount = 1000000000; //Amount of tokens to be distributed, we can change this to a global variable if we want to change the amount of tokens to be distributed.
     address public constant devWallet = 0x18C78629D321f11A1cdcbbAf394C78eb29412A4b; //This is the address of the dev wallet. It will hold the everburn tokens.
     uint constant ROYALTIES_WITHDRAWAL_DEADLINE = 30 days; // This is the time people have to claim their payouts before they will be sent to the dev wallet.
@@ -50,7 +53,7 @@ contract Everbuild is ERC721Enumerable, Ownable {
     function mintMultiple(uint _amount) public payable {
         require(publicMintEnabled == true, "Public mint is closed");
         require(_amount > 0, "You cannot mint 0 tokens");
-        require(_mintedTokens[msg.sender] + _amount <= 2 , "Maximum tokens minted"); // I hardcoded 2 here. We can change this to a global variable if we want to change the amount of tokens a user can mint.
+        require((_mintedTokens[msg.sender] + _amount <= PUBLIC_MAX_MINT) || msg.sender == owner() , "Maximum tokens minted"); // I hardcoded 2 here. We can change this to a global variable if we want to change the amount of tokens a user can mint.
         require(everburn.balanceOf(msg.sender) >= price * _amount, "You have Insufficient Everburn");
         require(totalSupply() + _amount < MAX_SUPPLY, "ALL NFTs have been minted");
 
@@ -185,6 +188,7 @@ contract Everbuild is ERC721Enumerable, Ownable {
 
         
         everburn.transfer(msg.sender, availableToClaim);
+        totalClaimed[msg.sender] += availableToClaim;
         
         emit RoyaltiesClaimed(msg.sender, availableToClaim);
     }
