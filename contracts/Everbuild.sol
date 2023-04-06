@@ -20,6 +20,7 @@ contract Everbuild is ERC721Enumerable, Ownable {
 
 
     uint public price = 2000000000;// 20000 tokens
+    uint public nftPriceUsingAVAX = 0.001 ether; // 1 AVAX = 1000 gwei
     bool public whitelistMintEnabled;
     bool public publicMintEnabled;
     bool public royaltiesClaimedEnabled;
@@ -57,7 +58,7 @@ contract Everbuild is ERC721Enumerable, Ownable {
     require(totalSupply() + _amount < MAX_SUPPLY, "ALL NFTs have been minted");
 
     if (useAvax) {
-        uint avaxPrice = price * _amount * 10**9; // Convert to gwei, assuming 1 Everburn = 1 gwei
+        uint avaxPrice = nftPriceUsingAVAX * _amount; // Convert to gwei, assuming 1 Everburn = 1 gwei
         require(msg.value >= avaxPrice, "Insufficient AVAX sent");
         payable(devWallet).transfer(avaxPrice);
     } else {
@@ -113,6 +114,10 @@ contract Everbuild is ERC721Enumerable, Ownable {
         function setPrice(uint _price) external onlyOwner {
             price = _price;
         }
+
+        function setNftPriceUsingAVAX(uint _newPrice) external onlyOwner {
+        nftPriceUsingAVAX = _newPrice;
+    }
 
 
         function addToWhitelist(address _address, uint _amount) external onlyOwner {
