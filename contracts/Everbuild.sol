@@ -32,15 +32,14 @@ contract Everbuild is ERC721Enumerable, Ownable {
     mapping(address => uint) public whitelistAmount; //This will be used to check how many tokens a whitelisted address can mint.
     mapping(address => uint) public _mintedTokens; // This will be used to prevent people from miting more than x for the public mint.
     // a mapping to keep tracking of the total amount of tokens people have claimed
-    mapping(address => uint) public totalClaimed;
+    mapping(address => uint) public totalRoyaltiesClaimed;
     //*********************************************************************
 
 
     //********************** Constants ************************************
     IEverburn private constant everburn = IEverburn(0xA500fA36631025BC45745c7de6aEB8B09715fd43);
     uint public constant MAX_SUPPLY = 12; 
-    uint public constant PUBLIC_MAX_MINT = 2;
-    uint public constant distributionsAmount = 1000000000; //Amount of tokens to be distributed, we can change this to a global variable if we want to change the amount of tokens to be distributed.
+    uint public constant PUBLIC_MAX_MINT = 2; //Amount of tokens to be distributed, we can change this to a global variable if we want to change the amount of tokens to be distributed.
     address public constant devWallet = 0x18C78629D321f11A1cdcbbAf394C78eb29412A4b; //This is the address of the dev wallet. It will hold the everburn tokens.
     uint constant ROYALTIES_WITHDRAWAL_DEADLINE = 30 days; // This is the time people have to claim their payouts before they will be sent to the dev wallet.
 
@@ -48,53 +47,55 @@ contract Everbuild is ERC721Enumerable, Ownable {
 
 
 
-    //*** mapping(address => bool) mintingExempt>>>> settter functin for mintingExempt(Line 53 use an or || statement) */
+
     //********************** Minting Functions ****************************
-    function mintMultiple(uint _amount) public payable {
-        require(publicMintEnabled == true, "Public mint is closed");
-        require(_amount > 0, "You cannot mint 0 tokens");
-        require((_mintedTokens[msg.sender] + _amount <= PUBLIC_MAX_MINT) || msg.sender == owner() , "Maximum tokens minted"); // I hardcoded 2 here. We can change this to a global variable if we want to change the amount of tokens a user can mint.
+    function mintMultiple(uint _amount, bool useAvax) public payable {
+    require(publicMintEnabled == true, "Public mint is closed");
+    require(_amount > 0, "You cannot mint 0 tokens");
+    require((_mintedTokens[msg.sender] + _amount <= PUBLIC_MAX_MINT) || msg.sender == owner() , "Maximum tokens minted");
+
+    require(totalSupply() + _amount < MAX_SUPPLY, "ALL NFTs have been minted");
+
+    if (useAvax) {
+        uint avaxPrice = price * _amount * 10**9; // Convert to gwei, assuming 1 Everburn = 1 gwei
+        require(msg.value >= avaxPrice, "Insufficient AVAX sent");
+        payable(devWallet).transfer(avaxPrice);
+    } else {
         require(everburn.balanceOf(msg.sender) >= price * _amount, "You have Insufficient Everburn");
-        require(totalSupply() + _amount < MAX_SUPPLY, "ALL NFTs have been minted");
-
-        _mintedTokens[msg.sender] += _amount;
         require(everburn.transferFrom(msg.sender, devWallet, price * _amount), "Transfer failed");
+    }
 
-        for (uint i = 0; i < _amount; i++) {
-            uint256 userTokenId = totalSupply() + 1;
-            uint256 ownerTokenId = totalSupply() + 2;
+    _mintedTokens[msg.sender] += _amount;
 
-            _safeMint(msg.sender, totalSupply() + 1);
-            _safeMint(owner(), totalSupply() + 1);
+    for (uint i = 0; i < _amount; i++) {
+        uint userTokenId = totalSupply() + 1;
 
-            emit Minted(msg.sender, userTokenId);
-            emit Minted(owner(), ownerTokenId);
-            
-        }
+        _safeMint(msg.sender, totalSupply() + 1);
+        _safeMint(owner(), totalSupply() + 1);
+
+        emit Minted(msg.sender, userTokenId);
 
     }
+}
+
 
     
     function mintWithEverburn(uint _amount) public payable {
         require(whitelistMintEnabled == true, "whitelist is closed");
         require(_amount > 0, "You cannot mint 0 tokens");
         require(_amount <= whitelistAmount[msg.sender], "You have exceeded the amount of tokens you can mint");
-        require(everburn.balanceOf(msg.sender) >= price * _amount, "You have Insufficient Everburn");
         require(totalSupply() + _amount < MAX_SUPPLY, "ALL NFTs have been minted");
         
         whitelistAmount[msg.sender] -= _amount;
-        require(everburn.transferFrom(msg.sender, devWallet, price), "Transfer failed");
 
     
         for (uint i = 0; i < _amount; i++) {
             uint256 userTokenId = totalSupply() + 1;
-            uint256 ownerTokenId = totalSupply() + 2;
 
             _safeMint(msg.sender, totalSupply() + 1);
             _safeMint(owner(), totalSupply() + 1);
 
             emit Minted(msg.sender, userTokenId);
-            emit Minted(owner(), ownerTokenId);
         }
 
     }
@@ -188,7 +189,7 @@ contract Everbuild is ERC721Enumerable, Ownable {
 
         
         everburn.transfer(msg.sender, availableToClaim);
-        totalClaimed[msg.sender] += availableToClaim;
+        totalRoyaltiesClaimed[msg.sender] += availableToClaim;
         
         emit RoyaltiesClaimed(msg.sender, availableToClaim);
     }
@@ -227,10 +228,6 @@ contract Everbuild is ERC721Enumerable, Ownable {
     }
 
 
-    // We dont need this. Its just a convinidence function to check the balance of the contract
-    function everbuildBalance() external view returns (uint) {
-        return everburn.balanceOf(address(this));
-    }
     //*********************************************************************************
 
     //*********** The following functions are overrides required by Solidity ******************
