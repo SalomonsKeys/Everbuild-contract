@@ -237,7 +237,7 @@ contract Everbuild is ERC721Enumerable, Ownable {
 
     //*********** The following functions are overrides required by Solidity ******************
     function _baseURI() internal pure override returns (string memory) {
-        return "ipfs://{ipfs url here}/";
+        return "ipfs://QmQYMEDgYkj4mLgJubUrq2GwYR4NfgwxgPWsGsmm9KNFdw?filename=0&ID=";
     }
     //*******************************************************************************************
 
