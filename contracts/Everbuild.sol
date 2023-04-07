@@ -17,15 +17,18 @@ contract Everbuild is ERC721Enumerable, Ownable {
     event Minted(address indexed _to, uint256 indexed _tokenId);
 
 
-
-
-    uint public price = 2000000000;// 20000 tokens
+    uint public price = 2000000000;// 2000 tokens
     uint public nftPriceUsingAVAX = 0.001 ether; // 1 AVAX = 1000 gwei
     bool public whitelistMintEnabled;
     bool public publicMintEnabled;
     bool public royaltiesClaimedEnabled;
     uint public tokensToClaim; // We can use this variable to be displayd to show how many tokens are left to claim on the website.
     uint public royaltiesWithdrawalTimestamp; // This will be used to set the time when the royalties can be withdrawn.
+
+    uint public  MAX_SUPPLY = 1400; 
+    uint public  PUBLIC_MAX_MINT = 20; //Amount of tokens to be distributed, we can change this to a global variable if we want to change the amount of tokens to be distributed.
+    address public  devWallet = 0x18C78629D321f11A1cdcbbAf394C78eb29412A4b; //This is the address of the dev wallet. It will hold the everburn tokens.
+   
 
     //********************** Mappings && Arrays ************************************
     address[] public claimableAddresses; // This will be used to store the addresses of the people who can claim their tokens.
@@ -39,10 +42,8 @@ contract Everbuild is ERC721Enumerable, Ownable {
 
     //********************** Constants ************************************
     IEverburn private constant everburn = IEverburn(0xA500fA36631025BC45745c7de6aEB8B09715fd43);
-    uint public constant MAX_SUPPLY = 12; 
-    uint public constant PUBLIC_MAX_MINT = 2; //Amount of tokens to be distributed, we can change this to a global variable if we want to change the amount of tokens to be distributed.
-    address public constant devWallet = 0x18C78629D321f11A1cdcbbAf394C78eb29412A4b; //This is the address of the dev wallet. It will hold the everburn tokens.
     uint constant ROYALTIES_WITHDRAWAL_DEADLINE = 30 days; // This is the time people have to claim their payouts before they will be sent to the dev wallet.
+
 
     //*********************************************************************
 
@@ -111,19 +112,33 @@ contract Everbuild is ERC721Enumerable, Ownable {
 
 //************* Global Variable Setters ********************************
     
-        function setPrice(uint _price) external onlyOwner {
+        function setEVBPrice(uint _price) external onlyOwner {
             price = _price;
         }
 
         function setNftPriceUsingAVAX(uint _newPrice) external onlyOwner {
-        nftPriceUsingAVAX = _newPrice;
-    }
+            nftPriceUsingAVAX = _newPrice;
+        }
 
 
         function addToWhitelist(address _address, uint _amount) external onlyOwner {
             whitelistAmount[_address] = _amount;
         }
 
+        function setMaxPublicMint(uint _maxPM) external onlyOwner {
+            require(_maxPM <= 30, "You cannot exceed 30 NFTs");
+            PUBLIC_MAX_MINT = _maxPM;
+        }
+
+        function setMaxSupply(uint _maxSup) external onlyOwner {
+            require(_maxSup <= 1400, "You cannot exceed 1400 NFTs");
+            MAX_SUPPLY = _maxSup;
+        }
+
+
+        function setDevWallet(address _dev) external onlyOwner {
+            devWallet = _dev;    
+        }
 
         function setWhitelistMintEnabled() external onlyOwner {
             whitelistMintEnabled = !whitelistMintEnabled;
@@ -220,9 +235,6 @@ contract Everbuild is ERC721Enumerable, Ownable {
     }
 
     //*********************************************************************
-
-
-
 
 
 
