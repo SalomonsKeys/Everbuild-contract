@@ -22,21 +22,22 @@ contract Everbuild is ERC721Enumerable, Ownable {
     bool public whitelistMintEnabled;
     bool public publicMintEnabled;
     bool public royaltiesClaimedEnabled;
-    uint public tokensToClaim; // We can use this variable to be displayd to show how many tokens are left to claim on the website.
-    uint public royaltiesWithdrawalTimestamp; // This will be used to set the time when the royalties can be withdrawn.
+    uint public tokensToClaim;
+    uint public royaltiesWithdrawalTimestamp; 
 
     uint public  MAX_SUPPLY = 1400; 
-    uint public  PUBLIC_MAX_MINT = 20; //Amount of tokens to be distributed, we can change this to a global variable if we want to change the amount of tokens to be distributed.
-    address public  devWallet = 0x18C78629D321f11A1cdcbbAf394C78eb29412A4b; //This is the address of the dev wallet. It will hold the everburn tokens.
+    uint public  PUBLIC_MAX_MINT = 20; 
+    address public  devWallet = 0x18C78629D321f11A1cdcbbAf394C78eb29412A4b; 
    
 
     //********************** Mappings && Arrays ************************************
-    address[] public claimableAddresses; // This will be used to store the addresses of the people who can claim their tokens.
     mapping(address => uint) public claimable; // This will be used to store the amount of tokens a user can claim.
     mapping(address => uint) public whitelistAmount; //This will be used to check how many tokens a whitelisted address can mint.
     mapping(address => uint) public _mintedTokens; // This will be used to prevent people from miting more than x for the public mint.
     // a mapping to keep tracking of the total amount of tokens people have claimed
     mapping(address => uint) public totalRoyaltiesClaimed;
+    mapping(address => bool) public hasUnclaimedRoyalties;
+
     //*********************************************************************
 
 
@@ -181,12 +182,11 @@ contract Everbuild is ERC721Enumerable, Ownable {
     function setRoyaltieSnapshot(address[] memory recipients, uint[] memory amounts, uint totalTokens) external onlyOwner {
         require(recipients.length == amounts.length, "Lengths do not match, this means you have one more than the other");
         uint claimableTokens = totalTokens;
-        claimableAddresses = new address[](0); // This will reset the array so we can use it again.
         // Here im checking if the total tokens is equal to the sum of the amounts
         for(uint i = 0; i < recipients.length; i++) {
             totalTokens -= amounts[i];
             claimable[recipients[i]] += amounts[i];
-            claimableAddresses.push(recipients[i]);
+            hasUnclaimedRoyalties[recipients[i]] = true;
         }
 
         // This final check will make sure the total tokens is equal to the sum of the amounts and will revert everything if it is not
@@ -215,24 +215,26 @@ contract Everbuild is ERC721Enumerable, Ownable {
     }
 
     //**This is a gas expensive loop since we are looping through the array and updating. Reinitialize the array with claimableAddresses = new address[](0); just like in the set royalties function  */
-    function withdrawUnclaimedRoyalties() external onlyOwner {
-        require(block.timestamp >= royaltiesWithdrawalTimestamp, "Cannot withdraw yet");
-        
-        uint unclaimedRoyalties = tokensToClaim;
-        // Transfer the unclaimed royalties to the owner
-        everburn.transfer(devWallet, unclaimedRoyalties);
-        tokensToClaim = 0;
+    function withdrawUnclaimedRoyalties(address[] memory recipients) external onlyOwner {
+    require(block.timestamp >= royaltiesWithdrawalTimestamp, "Cannot withdraw yet");
+    
+    uint unclaimedRoyalties = tokensToClaim;
+    // Transfer the unclaimed royalties to the owner
+    everburn.transfer(devWallet, unclaimedRoyalties);
+    tokensToClaim = 0;
 
-        // Update the claimable mapping for all users who had claimable royalties
-        for (uint i = 0; i < claimableAddresses.length; i++) {
-            address recipient = claimableAddresses[i];
-            if (claimable[recipient] > 0) {
-                claimable[recipient] = 0;
-            }
+    // Update the claimable mapping for all users who had claimable royalties
+    for (uint i = 0; i < recipients.length; i++) {
+        address recipient = recipients[i];
+        if (hasUnclaimedRoyalties[recipient]) {
+            claimable[recipient] = 0;
+            hasUnclaimedRoyalties[recipient] = false;
         }
-
-        emit RoyaltiesWithdrawn(owner(), unclaimedRoyalties);
     }
+
+    emit RoyaltiesWithdrawn(owner(), unclaimedRoyalties);
+}
+
 
     //*********************************************************************
 
@@ -253,11 +255,7 @@ contract Everbuild is ERC721Enumerable, Ownable {
     }
     //*******************************************************************************************
 
-    function getClaimableAddresses() public view returns (address[] memory) {
-    return claimableAddresses;
-}
-
-
+ 
 
     function withdraw(address payable _to) external onlyOwner {
         _to.transfer(address(this).balance);
