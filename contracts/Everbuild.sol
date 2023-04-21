@@ -19,18 +19,21 @@ contract Everbuild is ERC721Enumerable, Ownable {
 
     uint public price = 2000000000;// 2000 tokens
     uint public nftPriceUsingAVAX = 0.001 ether; // 1 AVAX = 1000 gwei
+    bool public acceptAVAX; // This will be used to enable/disable the ability to mint with AVAX. default is false.
     bool public whitelistMintEnabled;
     bool public publicMintEnabled;
     bool public royaltiesClaimedEnabled;
     uint public tokensToClaim;
-    uint public royaltiesWithdrawalTimestamp; 
+    uint public royaltiesWithdrawalTimestamp;// This will hold the timestamp of when the dev can withdraw the royalties.
+    uint public royaltiesWithdrawalDeadline = 30 days; // This is the time people have to claim their payouts before they will be sent to the dev wallet.
+ 
+
 
     uint public MAX_PUBLIC_SUPPLY = 0; //350 max
     uint public MAX_WHITELIST_SUPPLY = 0; // 350 max
+    uint public MAX_SUPPLY = 1400; 
+    uint public PUBLIC_MAX_MINT = 30; 
 
-
-    uint public  MAX_SUPPLY = 1400; 
-    uint public  PUBLIC_MAX_MINT = 30; 
     address public  devWallet = 0x18C78629D321f11A1cdcbbAf394C78eb29412A4b; 
    
 
@@ -47,7 +50,6 @@ contract Everbuild is ERC721Enumerable, Ownable {
 
     //********************** Constants ************************************
     IEverburn private constant everburn = IEverburn(0xA500fA36631025BC45745c7de6aEB8B09715fd43);
-    uint constant ROYALTIES_WITHDRAWAL_DEADLINE = 30 days; // This is the time people have to claim their payouts before they will be sent to the dev wallet.
 
 
     //*********************************************************************
@@ -65,6 +67,7 @@ contract Everbuild is ERC721Enumerable, Ownable {
     require(totalSupply() + _amount < MAX_SUPPLY, "ALL NFTs have been minted");
 
     if (useAvax) {
+        require(acceptAVAX, "AVAX not accepted");
         uint avaxPrice = nftPriceUsingAVAX * _amount; // Convert to gwei, assuming 1 Everburn = 1 gwei
         require(msg.value >= avaxPrice, "Insufficient AVAX sent");
         payable(devWallet).transfer(avaxPrice);
@@ -128,6 +131,10 @@ contract Everbuild is ERC721Enumerable, Ownable {
             price = _price;
         }
 
+        function setAcceptAVAX(bool _acceptAvex) external onlyOwner {
+            acceptAVAX = _acceptAvex;
+        }
+
         function setNftPriceUsingAVAX(uint _newPrice) external onlyOwner {
             nftPriceUsingAVAX = _newPrice;
         }
@@ -168,6 +175,10 @@ contract Everbuild is ERC721Enumerable, Ownable {
             royaltiesClaimedEnabled = !royaltiesClaimedEnabled;
             emit RoyaltiesClaimedEnabledChanged(royaltiesClaimedEnabled);
         }
+
+        function setRoyaltiesWithdrawalDeadline(uint _newDeadline) external onlyOwner {
+            royaltiesWithdrawalDeadline = _newDeadline;
+        }
     
        
 //*********************************************************************
@@ -203,7 +214,7 @@ contract Everbuild is ERC721Enumerable, Ownable {
         // This final check will make sure the total tokens is equal to the sum of the amounts and will revert everything if it is not
         require(totalTokens == 0, "The total tokens did not match the sum of the amounts");
         tokensToClaim = claimableTokens;
-        royaltiesWithdrawalTimestamp = block.timestamp + ROYALTIES_WITHDRAWAL_DEADLINE;
+        royaltiesWithdrawalTimestamp = block.timestamp + royaltiesWithdrawalDeadline;
         
     }
         
