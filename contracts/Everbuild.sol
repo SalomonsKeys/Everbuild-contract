@@ -25,8 +25,12 @@ contract Everbuild is ERC721Enumerable, Ownable {
     uint public tokensToClaim;
     uint public royaltiesWithdrawalTimestamp; 
 
+    uint public MAX_PUBLIC_SUPPLY = 0; //350 max
+    uint public MAX_WHITELIST_SUPPLY = 0; // 350 max
+
+
     uint public  MAX_SUPPLY = 1400; 
-    uint public  PUBLIC_MAX_MINT = 20; 
+    uint public  PUBLIC_MAX_MINT = 30; 
     address public  devWallet = 0x18C78629D321f11A1cdcbbAf394C78eb29412A4b; 
    
 
@@ -56,6 +60,7 @@ contract Everbuild is ERC721Enumerable, Ownable {
     require(publicMintEnabled == true, "Public mint is closed");
     require(_amount > 0, "You cannot mint 0 tokens");
     require((_mintedTokens[msg.sender] + _amount <= PUBLIC_MAX_MINT) || msg.sender == owner() , "Maximum tokens minted");
+    require(MAX_PUBLIC_SUPPLY + _amount >= 350, "Public Mint Max of 350 Reached");
 
     require(totalSupply() + _amount < MAX_SUPPLY, "ALL NFTs have been minted");
 
@@ -71,9 +76,12 @@ contract Everbuild is ERC721Enumerable, Ownable {
     _mintedTokens[msg.sender] += _amount;
 
     for (uint i = 0; i < _amount; i++) {
+        
         uint userTokenId = totalSupply() + 1;
 
         _safeMint(msg.sender, totalSupply() + 1);
+        MAX_PUBLIC_SUPPLY++;
+
         _safeMint(owner(), totalSupply() + 1);
 
         emit Minted(msg.sender, userTokenId);
@@ -88,7 +96,8 @@ contract Everbuild is ERC721Enumerable, Ownable {
         require(_amount > 0, "You cannot mint 0 tokens");
         require(_amount <= whitelistAmount[msg.sender], "You have exceeded the amount of tokens you can mint");
         require(totalSupply() + _amount < MAX_SUPPLY, "ALL NFTs have been minted");
-        
+        require(MAX_WHITELIST_SUPPLY + _amount > 351, "Whitelist Mint Max of 350 Reached");
+
         whitelistAmount[msg.sender] -= _amount;
 
     
@@ -96,6 +105,8 @@ contract Everbuild is ERC721Enumerable, Ownable {
             uint256 userTokenId = totalSupply() + 1;
 
             _safeMint(msg.sender, totalSupply() + 1);
+            MAX_WHITELIST_SUPPLY++;
+
             _safeMint(owner(), totalSupply() + 1);
 
             emit Minted(msg.sender, userTokenId);
