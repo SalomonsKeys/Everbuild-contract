@@ -26,7 +26,7 @@ contract Everbuild is ERC721Enumerable, Ownable {
     uint public tokensToClaim;
     uint public royaltiesWithdrawalTimestamp;// This will hold the timestamp of when the dev can withdraw the royalties.
     uint public royaltiesWithdrawalDeadline = 30 days; // This is the time people have to claim their payouts before they will be sent to the dev wallet.
- 
+    uint public royaltiesTotalClaimed; // This will be used to keep track of the total amount of royalties claimed.
 
 
     uint public MAX_PUBLIC_SUPPLY = 0; //350 max
@@ -117,15 +117,6 @@ contract Everbuild is ERC721Enumerable, Ownable {
 
     }
 
-
-    
-
-//*********************************************************************
-
-
-
-
-//************* Global Variable Setters ********************************
     
         function setEVBPrice(uint _price) external onlyOwner {
             price = _price;
@@ -180,27 +171,19 @@ contract Everbuild is ERC721Enumerable, Ownable {
             royaltiesWithdrawalDeadline = _newDeadline;
         }
     
-       
-//*********************************************************************
 
+        function setWhitelistSnapshot(address[] memory _addresses, uint[] memory _amounts, uint totalMints) external onlyOwner {
+            require(_addresses.length == _amounts.length, "Lengths do not match, this means you have one more than the other");
+            for(uint i = 0; i < _addresses.length; i++) {
+                totalMints = totalMints - _amounts[i];
+                whitelistAmount[_addresses[i]] = _amounts[i];
+            }
 
-//******* Set whitelist addresses and amount of nfts they can mint **************************
-
-    function setWhitelistSnapshot(address[] memory _addresses, uint[] memory _amounts, uint totalMints) external onlyOwner {
-        require(_addresses.length == _amounts.length, "Lengths do not match, this means you have one more than the other");
-        for(uint i = 0; i < _addresses.length; i++) {
-            totalMints = totalMints - _amounts[i];
-            whitelistAmount[_addresses[i]] = _amounts[i];
+            // This final check will make sure the total mints is equal to the sum of the amounts. If not it will revert everything.
+            require(totalMints == 0, "The total mints did not match the sum of the amounts");
         }
 
-        // This final check will make sure the total mints is equal to the sum of the amounts. If not it will revert everything.
-        require(totalMints == 0, "The total mints did not match the sum of the amounts");
-    }
 
-//*******************************************************************************************
-
-
- //********************** Payment Distributions ************************
     function setRoyaltieSnapshot(address[] memory recipients, uint[] memory amounts, uint totalTokens) external onlyOwner {
         require(recipients.length == amounts.length, "Lengths do not match, this means you have one more than the other");
         uint claimableTokens = totalTokens;
@@ -232,6 +215,7 @@ contract Everbuild is ERC721Enumerable, Ownable {
         
         everburn.transfer(msg.sender, availableToClaim);
         totalRoyaltiesClaimed[msg.sender] += availableToClaim;
+        royaltiesTotalClaimed += availableToClaim;
         
         emit RoyaltiesClaimed(msg.sender, availableToClaim);
     }
