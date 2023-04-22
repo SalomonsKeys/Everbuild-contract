@@ -62,7 +62,7 @@ contract Everbuild is ERC721Enumerable, Ownable {
     require(publicMintEnabled == true, "Public mint is closed");
     require(_amount > 0, "You cannot mint 0 tokens");
     require((_mintedTokens[msg.sender] + _amount <= PUBLIC_MAX_MINT) || msg.sender == owner() , "Maximum tokens minted");
-    require(MAX_PUBLIC_SUPPLY + _amount >= 350, "Public Mint Max of 350 Reached");
+    require(MAX_PUBLIC_SUPPLY + _amount < 350, "Public Mint Max of 350 Reached");
 
     require(totalSupply() + _amount < MAX_SUPPLY, "ALL NFTs have been minted");
 
@@ -99,7 +99,7 @@ contract Everbuild is ERC721Enumerable, Ownable {
         require(_amount > 0, "You cannot mint 0 tokens");
         require(_amount <= whitelistAmount[msg.sender], "You have exceeded the amount of tokens you can mint");
         require(totalSupply() + _amount < MAX_SUPPLY, "ALL NFTs have been minted");
-        require(MAX_WHITELIST_SUPPLY + _amount > 351, "Whitelist Mint Max of 350 Reached");
+        require(MAX_WHITELIST_SUPPLY + _amount < 351, "Whitelist Mint Max of 350 Reached");
 
         whitelistAmount[msg.sender] -= _amount;
 
