@@ -82,14 +82,16 @@ contract Everbuild is ERC721Enumerable, Ownable {
         
         uint userTokenId = totalSupply() + 1;
 
-        _safeMint(msg.sender, totalSupply() + 1);
-        MAX_PUBLIC_SUPPLY++;
+        _safeMint(msg.sender, userTokenId);
 
-        _safeMint(owner(), totalSupply() + 1);
+        _safeMint(owner(), userTokenId + 1);
 
         emit Minted(msg.sender, userTokenId);
 
     }
+
+    MAX_PUBLIC_SUPPLY += _amount;
+    
 }
 
 
@@ -107,14 +109,14 @@ contract Everbuild is ERC721Enumerable, Ownable {
         for (uint i = 0; i < _amount; i++) {
             uint256 userTokenId = totalSupply() + 1;
 
-            _safeMint(msg.sender, totalSupply() + 1);
-            MAX_WHITELIST_SUPPLY++;
+            _safeMint(msg.sender, userTokenId);
 
-            _safeMint(owner(), totalSupply() + 1);
+            _safeMint(owner(), userTokenId + 1);
 
             emit Minted(msg.sender, userTokenId);
         }
 
+        MAX_WHITELIST_SUPPLY += _amount;
     }
 
     
