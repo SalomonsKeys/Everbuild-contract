@@ -2,4 +2,6 @@ node_modules
 /artifacts
 /cache
 /deployArgs.json
+gas-report.txt
+.env
 

@@ -1,0 +1,8 @@
+//These are the environment variables that you need to set in order to run the project in a testnet or mainnet
+// IMPORTANT!!!!! YOU DONT NEED TO INPUT YOUR PRIVATE KEY OR PROVIDER URL
+// YOU CAN USE Truffle Dashboard. Its a much safer option
+// IF YOU GO WITH THE OPTION TO INPUT YOUR PROVIDER URL AND PRIVATE KEY, MAKE SURE TO ADD .env TO YOUR .gitignore FILE
+
+
+// PROVIDER_URL=https://ropsten.infura.io/v3/yourinfurakey
+// PRIVATE_KEY=yourprivatekey
